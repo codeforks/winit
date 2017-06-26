@@ -16,7 +16,6 @@ libc = "0.2"
 shared_library = "0.1.5"
 
 [target.'cfg(target_os = "android")'.dependencies.android_support]
-version = "0.2"
 git = "https://github.com/cosier/android-support-rs"
 
 [target.'cfg(target_os = "ios")'.dependencies]
