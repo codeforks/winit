@@ -1,6 +1,6 @@
 #![cfg(target_os = "android")]
 
-extern crate android_glue;
+extern crate android_support;
 
 use libc;
 use std::ffi::{CString};
@@ -21,7 +21,7 @@ gen_api_transition!();
 
 pub struct Window {
     native_window: *const c_void,
-    event_rx: Receiver<android_glue::Event>,
+    event_rx: Receiver<android_support::Event>,
 }
 
 #[derive(Clone)]
@@ -72,32 +72,32 @@ impl<'a> Iterator for PollEventsIterator<'a> {
 
     fn next(&mut self) -> Option<Event> {
         match self.window.event_rx.try_recv() {
-            Ok(android_glue::Event::EventMotion(motion)) => {
+            Ok(android_support::Event::EventMotion(motion)) => {
                 Some(Event::Touch(Touch {
                     phase: match motion.action {
-                        android_glue::MotionAction::Down => TouchPhase::Started,
-                        android_glue::MotionAction::Move => TouchPhase::Moved,
-                        android_glue::MotionAction::Up => TouchPhase::Ended,
-                        android_glue::MotionAction::Cancel => TouchPhase::Cancelled,
+                        android_support::MotionAction::Down => TouchPhase::Started,
+                        android_support::MotionAction::Move => TouchPhase::Moved,
+                        android_support::MotionAction::Up => TouchPhase::Ended,
+                        android_support::MotionAction::Cancel => TouchPhase::Cancelled,
                     },
                     location: (motion.x as f64, motion.y as f64),
                     id: motion.pointer_id as u64,
                 }))
             },
-            Ok(android_glue::Event::InitWindow) => {
+            Ok(android_support::Event::InitWindow) => {
                 // The activity went to foreground.
                 Some(Event::Suspended(false))
             },
-            Ok(android_glue::Event::TermWindow) => {
+            Ok(android_support::Event::TermWindow) => {
                 // The activity went to background.
                 Some(Event::Suspended(true))
             },
-            Ok(android_glue::Event::WindowResized) |
-            Ok(android_glue::Event::ConfigChanged) => {
+            Ok(android_support::Event::WindowResized) |
+            Ok(android_support::Event::ConfigChanged) => {
                 // Activity Orientation changed or resized.
                 self.window.get_inner_size().map(|s| Event::Resized(s.0, s.1))
             },
-            Ok(android_glue::Event::WindowRedrawNeeded) => {
+            Ok(android_support::Event::WindowRedrawNeeded) => {
                 // The activity needs to be redrawn.
                 Some(Event::Refresh)
             }
@@ -139,14 +139,14 @@ impl Window {
         assert!(win_attribs.min_dimensions.is_none());
         assert!(win_attribs.max_dimensions.is_none());
 
-        let native_window = unsafe { android_glue::get_native_window() };
+        let native_window = unsafe { android_support::get_native_window() };
         if native_window.is_null() {
             return Err(OsError(format!("Android's native window is null")));
         }
 
         let (tx, rx) = channel();
-        android_glue::add_sender(tx);
-        android_glue::set_multitouch(win_attribs.multitouch);
+        android_support::add_sender(tx);
+        android_support::set_multitouch(win_attribs.multitouch);
 
         Ok(Window {
             native_window: native_window as *const _,
@@ -187,7 +187,7 @@ impl Window {
 
     #[inline]
     pub fn get_inner_size(&self) -> Option<(u32, u32)> {
-        let native_window = unsafe { android_glue::get_native_window() };
+        let native_window = unsafe { android_support::get_native_window() };
 
         if native_window.is_null() {
             None
@@ -270,6 +270,6 @@ pub struct WindowProxy;
 impl WindowProxy {
     #[inline]
     pub fn wakeup_event_loop(&self) {
-        android_glue::wake_event_loop();
+        android_support::wake_event_loop();
     }
 }
